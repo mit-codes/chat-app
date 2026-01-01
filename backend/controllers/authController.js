@@ -37,7 +37,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { mobile, password } = req.body;
-
+    debugger;
     // Find user
     const user = await User.findOne({ mobile });
     if (!user) {
@@ -52,7 +52,7 @@ exports.login = async (req, res) => {
 
     // Generate Token
     const token = jwt.sign(
-      { id: user._id, mobile ,username: user.username },
+      { id: user._id, mobile, username: user.username },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );

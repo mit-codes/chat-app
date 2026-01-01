@@ -10,7 +10,12 @@ import {
   Mic,
   Check,
   CheckCheck,
+  Hash,
+  Users,
+  Sparkles,
+  UserPlus,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Chat = () => {
   const [activeChat, setActiveChat] = useState(1);
@@ -108,7 +113,6 @@ const Chat = () => {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!messageInput.trim()) return;
-    // Handle send logic here
     console.log("Sending:", messageInput);
     setMessageInput("");
   };
@@ -116,32 +120,57 @@ const Chat = () => {
   const activeContact = contacts.find((c) => c.id === activeChat);
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
+    <div className="flex h-screen bg-bg-deep overflow-hidden relative">
+      {/* Background Glows (Static) */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 blur-[128px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 blur-[128px] pointer-events-none" />
+
       {/* Sidebar */}
-      <div className="w-1/3 max-w-sm bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="w-1/4 max-w-sm glass border-r border-white/10 flex flex-col z-10">
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Chats
+        <div className="p-6 flex justify-between items-center">
+          <h1 className="text-3xl font-black bg-gradient-to-r from-white to-white/40 bg-clip-text text-transparent">
+            Vibe
           </h1>
-          <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
-            <MoreVertical size={20} />
-          </button>
+          <div className="flex space-x-2">
+            <button className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors">
+              <Users size={20} />
+            </button>
+            <button className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors">
+              <UserPlus size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Search */}
-        <div className="p-4">
-          <div className="relative">
+        <div className="px-6 pb-6">
+          <div className="relative group">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors"
               size={18}
             />
             <input
               type="text"
-              placeholder="Search conversations..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 border-none focus:ring-2 focus:ring-indigo-500 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none transition-all"
+              placeholder="Search vibe..."
+              className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white/5 border border-white/5 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white placeholder:text-slate-600 transition-all"
             />
           </div>
+        </div>
+
+        {/* Categories */}
+        <div className="flex px-6 space-x-2 pb-4 overflow-x-auto custom-scrollbar no-scrollbar">
+          {["All", "Direct", "Groups", "Unread"].map((cat, i) => (
+            <button
+              key={cat}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                i === 0
+                  ? "bg-primary text-white shadow-lg"
+                  : "bg-white/5 text-slate-400 hover:bg-white/10"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
         {/* Contacts List */}
@@ -150,47 +179,40 @@ const Chat = () => {
             <div
               key={contact.id}
               onClick={() => setActiveChat(contact.id)}
-              className={`flex items-center p-4 cursor-pointer transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+              className={`flex items-center mx-4 my-1 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
                 activeChat === contact.id
-                  ? "bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500"
-                  : "border-l-4 border-transparent"
+                  ? "bg-white/10 border border-white/10 shadow-lg"
+                  : "hover:bg-white/5 border border-transparent"
               }`}
             >
               <div className="relative">
                 <img
                   src={contact.avatar}
                   alt={contact.name}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="w-14 h-14 rounded-2xl object-cover"
                 />
                 {contact.online && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
+                  <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-4 border-[#121b2e] rounded-full" />
                 )}
               </div>
               <div className="ml-4 flex-1">
                 <div className="flex justify-between items-baseline">
                   <h3
-                    className={`text-sm font-semibold ${
+                    className={`font-bold ${
                       activeChat === contact.id
-                        ? "text-indigo-600 dark:text-indigo-400"
-                        : "text-gray-800 dark:text-gray-200"
+                        ? "text-white"
+                        : "text-slate-300"
                     }`}
                   >
                     {contact.name}
                   </h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-[10px] uppercase font-black text-slate-500">
                     {contact.time}
                   </span>
                 </div>
-                <div className="flex justify-between items-center mt-1">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate w-40">
-                    {contact.lastMessage}
-                  </p>
-                  {contact.unread > 0 && (
-                    <span className="w-5 h-5 flex items-center justify-center bg-indigo-500 text-white text-xs font-bold rounded-full">
-                      {contact.unread}
-                    </span>
-                  )}
-                </div>
+                <p className="text-xs text-slate-500 truncate w-40 mt-1">
+                  {contact.lastMessage}
+                </p>
               </div>
             </div>
           ))}
@@ -198,53 +220,57 @@ const Chat = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 flex flex-col h-full z-10">
         {activeChat ? (
           <>
             {/* Chat Header */}
-            <div className="px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
+            <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-transparent backdrop-blur-md">
               <div className="flex items-center">
                 <div className="relative">
                   <img
                     src={activeContact?.avatar}
                     alt={activeContact?.name}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-12 h-12 rounded-2xl object-cover border border-white/10"
                   />
                   {activeContact?.online && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
+                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-4 border-[#0f172a] rounded-full" />
                   )}
                 </div>
                 <div className="ml-4">
-                  <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+                  <h2 className="text-xl font-black text-white">
                     {activeContact?.name}
                   </h2>
-                  <p className="text-xs text-green-500 font-medium">
-                    {activeContact?.online ? "Online" : "Offline"}
-                  </p>
+                  <div className="flex items-center">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                        activeContact?.online
+                          ? "bg-green-500 shadow-sm"
+                          : "bg-slate-600"
+                      }`}
+                    />
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                      {activeContact?.online
+                        ? "Active Now"
+                        : "Currently Offline"}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300">
+              <div className="flex items-center space-x-2">
+                <button className="p-3 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all">
                   <Phone size={20} />
                 </button>
-                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300">
+                <button className="p-3 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all">
                   <Video size={20} />
                 </button>
-                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300">
-                  <MoreVertical size={20} />
+                <button className="p-3 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all">
+                  <Hash size={20} />
                 </button>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
-              {/* Date separator example */}
-              <div className="flex justify-center my-4">
-                <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs font-medium">
-                  Today
-                </span>
-              </div>
-
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -255,34 +281,38 @@ const Chat = () => {
                   {msg.senderId !== "me" && (
                     <img
                       src={activeContact?.avatar}
-                      alt="sender"
-                      className="w-8 h-8 rounded-full object-cover mr-2 self-end mb-1"
+                      className="w-8 h-8 rounded-xl object-cover mr-3 self-end mb-1 border border-white/10"
+                      alt=""
                     />
                   )}
                   <div
-                    className={`max-w-[70%] px-4 py-2 rounded-2xl shadow-sm relative group ${
+                    className={`px-5 py-3.5 rounded-3xl max-w-sm shadow-xl ${
                       msg.senderId === "me"
-                        ? "bg-indigo-600 text-white rounded-br-none"
-                        : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none"
+                        ? "bg-gradient-to-br from-primary to-primary/80 text-white rounded-br-none shadow-primary/20"
+                        : "glass-morphism text-slate-200 rounded-bl-none"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                    <p className="text-sm font-medium leading-relaxed">
+                      {msg.text}
+                    </p>
                     <div
-                      className={`flex items-center justify-end mt-1 space-x-1 ${
+                      className={`flex items-center justify-end mt-1.5 space-x-1.5 ${
                         msg.senderId === "me"
-                          ? "text-indigo-200"
-                          : "text-gray-400"
+                          ? "text-white/60"
+                          : "text-slate-500"
                       }`}
                     >
-                      <span className="text-[10px]">{msg.time}</span>
+                      <span className="text-[9px] font-black uppercase tracking-tighter">
+                        {msg.time}
+                      </span>
                       {msg.senderId === "me" && (
-                        <span>
-                          {msg.status === "sent" && <Check size={12} />}
+                        <span className="opacity-80">
+                          {msg.status === "sent" && <Check size={10} />}
                           {msg.status === "delivered" && (
-                            <CheckCheck size={12} />
+                            <CheckCheck size={10} />
                           )}
                           {msg.status === "read" && (
-                            <CheckCheck size={12} className="text-blue-300" />
+                            <CheckCheck size={10} className="text-accent" />
                           )}
                         </span>
                       )}
@@ -293,25 +323,14 @@ const Chat = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-              <form
-                onSubmit={handleSendMessage}
-                className="flex items-center space-x-2"
-              >
-                <div className="flex items-center space-x-2 text-gray-400">
-                  <button
-                    type="button"
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <Smile size={24} />
-                  </button>
-                  <button
-                    type="button"
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <Paperclip size={24} />
-                  </button>
-                </div>
+            <div className="px-8 pb-8 pt-4">
+              <div className="glass-morphism p-3 rounded-3xl flex items-center space-x-3">
+                <button className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                  <Smile size={24} />
+                </button>
+                <button className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                  <Paperclip size={24} />
+                </button>
 
                 <div className="flex-1 relative">
                   <input
@@ -319,37 +338,51 @@ const Chat = () => {
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     placeholder="Type a message..."
-                    className="w-full pl-5 pr-12 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 border-none focus:ring-2 focus:ring-indigo-500 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none transition-all"
+                    className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   />
                 </div>
 
-                {messageInput.trim() ? (
-                  <button
-                    type="submit"
-                    className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-all transform hover:scale-105"
-                  >
-                    <Send size={24} className="ml-1" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="p-3 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300 rounded-full transition-all"
-                  >
-                    <Mic size={24} />
-                  </button>
-                )}
-              </form>
+                <AnimatePresence mode="wait">
+                  {messageInput.trim() ? (
+                    <motion.button
+                      key="send"
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.9, opacity: 0 }}
+                      transition={{ duration: 0.1 }}
+                      type="submit"
+                      onClick={handleSendMessage}
+                      className="p-3.5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                    >
+                      <Send size={22} />
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      key="mic"
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.9, opacity: 0 }}
+                      transition={{ duration: 0.1 }}
+                      className="p-3.5 bg-white/5 text-slate-400 rounded-2xl hover:bg-white/10 active:scale-95 transition-all"
+                    >
+                      <Mic size={22} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col justify-center items-center text-center p-8 text-gray-500">
-            <div className="w-24 h-24 bg-indigo-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-              <span className="text-4xl">👋</span>
+          <div className="flex-1 flex flex-col justify-center items-center text-center p-8">
+            <div className="w-32 h-32 bg-gradient-to-tr from-primary/20 to-secondary/20 rounded-[40px] flex items-center justify-center mb-8 border border-white/5">
+              <Sparkles className="text-primary w-16 h-16" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-              Welcome to User Chat
+            <h3 className="text-4xl font-black text-white mb-4">
+              Select a vibe
             </h3>
-            <p>Select a conversation from the sidebar to start chatting.</p>
+            <p className="text-slate-500 max-w-xs font-medium">
+              Choose a conversation from the sidebar to join the conversation.
+            </p>
           </div>
         )}
       </div>
