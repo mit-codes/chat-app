@@ -56,31 +56,35 @@ module.exports = {
         type: "private",
       });
       debugger;
-      conversations = conversations.map(async (conversation) => {
-        const otherMember = conversation.members.find((member) => {
+
+      conversations = await Promise.all(
+        conversations.map(async (conversation) => {
+          const otherMember = conversation.members.find((member) => {
+            debugger;
+            return member !== mobile;
+          });
           debugger;
-          return member !== mobile;
-        });
-        debugger;
-        const user = await User.findOne({ mobile: otherMember });
-        debugger;
-        if (!user) {
+          const user = await User.findOne({ mobile: otherMember });
+          debugger;
+          if (!user) {
+            return {
+              id: conversation._id,
+              roomId: conversation.roomId,
+              members: conversation.members,
+              type: conversation.type,
+              name: otherMember,
+            };
+          }
           return {
             id: conversation._id,
             roomId: conversation.roomId,
             members: conversation.members,
             type: conversation.type,
-            name: otherMember,
+            name: user.username,
           };
-        }
-        return {
-          id: conversation._id,
-          roomId: conversation.roomId,
-          members: conversation.members,
-          type: conversation.type,
-          name: user.username,
-        };
-      });
+        })
+      );
+
       res.status(200).json({
         message: "Conversations fetched successfully",
         conversations,

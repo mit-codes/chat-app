@@ -19,7 +19,7 @@ import api from "../services/api";
 import { useEffect } from "react";
 
 const Chat = () => {
-  const [activeChat, setActiveChat] = useState(0);
+  const [activeChat, setActiveChat] = useState(null);
   const [messageInput, setMessageInput] = useState("");
   const [privateChat, setPrivateChat] = useState(false);
   const [groupeChat, setGroupeChat] = useState(false);
@@ -89,6 +89,7 @@ const Chat = () => {
       })
       .then((Data) => {
         console.log("Chat started successfully", Data);
+        getConversations();
         setPrivateChat(false);
       })
       .catch((error) => {
@@ -101,7 +102,7 @@ const Chat = () => {
       const response = await api.get("/conversation/getMyConversations", {});
       console.log(response);
       console.log("Conversations fetched successfully", response);
-      // setContacts((prev) => [...prev, ...response]);
+      setContacts(response.conversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
     }
@@ -156,10 +157,10 @@ const Chat = () => {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {contacts.map((contact, idx) => (
             <div
-              key={idx}
-              onClick={() => setActiveChat(idx)}
+              key={contact.id}
+              onClick={() => setActiveChat(contact.id)}
               className={`flex items-center mx-4 my-1 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
-                activeChat === idx
+                activeChat === contact.id
                   ? "bg-white/10 border border-white/10 shadow-lg"
                   : "hover:bg-white/5 border border-transparent"
               }`}
@@ -181,7 +182,7 @@ const Chat = () => {
                       activeChat === idx ? "text-white" : "text-slate-300"
                     }`}
                   >
-                    {contact.roomId}
+                    {contact.name}
                   </h3>
                   <span className="text-[10px] uppercase font-black text-slate-500">
                     {contact.time}
