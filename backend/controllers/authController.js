@@ -16,8 +16,7 @@ exports.register = async (req, res) => {
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
       username,
@@ -37,7 +36,6 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { mobile, password } = req.body;
-    debugger;
     // Find user
     const user = await User.findOne({ mobile });
     if (!user) {

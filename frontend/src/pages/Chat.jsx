@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Search,
-  MoreVertical,
   Phone,
   Video,
   Send,
@@ -16,54 +15,18 @@ import {
   UserPlus,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import api from "../services/api";
+import { useEffect } from "react";
 
 const Chat = () => {
-  const [activeChat, setActiveChat] = useState(1);
+  const [activeChat, setActiveChat] = useState(0);
   const [messageInput, setMessageInput] = useState("");
-
+  const [privateChat, setPrivateChat] = useState(false);
+  const [groupeChat, setGroupeChat] = useState(false);
+  const [contactNumber, setContactNumber] = useState("");
+  const user = JSON.parse(localStorage.getItem("user"));
   // Demo Data
-  const contacts = [
-    {
-      id: 1,
-      name: "Alice Freeman",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
-      lastMessage: "See you tomorrow! 👋",
-      time: "10:30 AM",
-      unread: 2,
-      online: true,
-    },
-    {
-      id: 2,
-      name: "Bob Smith",
-      avatar:
-        "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&h=150&fit=crop",
-      lastMessage: "Can you send the files?",
-      time: "Yesterday",
-      unread: 0,
-      online: false,
-    },
-    {
-      id: 3,
-      name: "Charlie Davis",
-      avatar:
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop",
-      lastMessage: "Thanks for the help.",
-      time: "Yesterday",
-      unread: 0,
-      online: true,
-    },
-    {
-      id: 4,
-      name: "Diana Prince",
-      avatar:
-        "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&h=150&fit=crop",
-      lastMessage: "Meeting rescheduled to 3 PM.",
-      time: "Mon",
-      unread: 5,
-      online: false,
-    },
-  ];
+  const [contacts, setContacts] = useState([]);
 
   const messages = [
     {
@@ -117,15 +80,44 @@ const Chat = () => {
     setMessageInput("");
   };
 
+  const handleNewChat = async () => {
+    console.log("Starting chat with:", contactNumber);
+    await api
+      .post("/conversation/create-private", {
+        myMobile: user.mobile,
+        autherMobile: contactNumber,
+      })
+      .then((Data) => {
+        console.log("Chat started successfully", Data);
+        setPrivateChat(false);
+      })
+      .catch((error) => {
+        console.error("Error starting chat:", error);
+      });
+  };
+
+  const getConversations = async () => {
+    try {
+      const response = await api.get("/conversation/getMyConversations", {});
+      console.log(response);
+      console.log("Conversations fetched successfully", response);
+      // setContacts((prev) => [...prev, ...response]);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    }
+  };
+
+  useEffect(() => {
+    getConversations();
+  }, []);
+
   const activeContact = contacts.find((c) => c.id === activeChat);
 
   return (
     <div className="flex h-screen bg-bg-deep overflow-hidden relative">
-      {/* Background Glows (Static) */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 blur-[128px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 blur-[128px] pointer-events-none" />
 
-      {/* Sidebar */}
       <div className="w-1/4 max-w-sm glass border-r border-white/10 flex flex-col z-10">
         {/* Sidebar Header */}
         <div className="p-6 flex justify-between items-center">
@@ -133,10 +125,13 @@ const Chat = () => {
             Vibe
           </h1>
           <div className="flex space-x-2">
-            <button className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors">
+            <button className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors cursor-pointer">
               <Users size={20} />
             </button>
-            <button className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors">
+            <button
+              onClick={() => setPrivateChat(true)}
+              className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors cursor-pointer"
+            >
               <UserPlus size={20} />
             </button>
           </div>
@@ -157,30 +152,14 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Categories */}
-        <div className="flex px-6 space-x-2 pb-4 overflow-x-auto custom-scrollbar no-scrollbar">
-          {["All", "Direct", "Groups", "Unread"].map((cat, i) => (
-            <button
-              key={cat}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                i === 0
-                  ? "bg-primary text-white shadow-lg"
-                  : "bg-white/5 text-slate-400 hover:bg-white/10"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
         {/* Contacts List */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {contacts.map((contact) => (
+          {contacts.map((contact, idx) => (
             <div
-              key={contact.id}
-              onClick={() => setActiveChat(contact.id)}
+              key={idx}
+              onClick={() => setActiveChat(idx)}
               className={`flex items-center mx-4 my-1 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
-                activeChat === contact.id
+                activeChat === idx
                   ? "bg-white/10 border border-white/10 shadow-lg"
                   : "hover:bg-white/5 border border-transparent"
               }`}
@@ -199,12 +178,10 @@ const Chat = () => {
                 <div className="flex justify-between items-baseline">
                   <h3
                     className={`font-bold ${
-                      activeChat === contact.id
-                        ? "text-white"
-                        : "text-slate-300"
+                      activeChat === idx ? "text-white" : "text-slate-300"
                     }`}
                   >
-                    {contact.name}
+                    {contact.roomId}
                   </h3>
                   <span className="text-[10px] uppercase font-black text-slate-500">
                     {contact.time}
@@ -343,31 +320,18 @@ const Chat = () => {
                 </div>
 
                 <AnimatePresence mode="wait">
-                  {messageInput.trim() ? (
-                    <motion.button
-                      key="send"
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.9, opacity: 0 }}
-                      transition={{ duration: 0.1 }}
-                      type="submit"
-                      onClick={handleSendMessage}
-                      className="p-3.5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
-                    >
-                      <Send size={22} />
-                    </motion.button>
-                  ) : (
-                    <motion.button
-                      key="mic"
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.9, opacity: 0 }}
-                      transition={{ duration: 0.1 }}
-                      className="p-3.5 bg-white/5 text-slate-400 rounded-2xl hover:bg-white/10 active:scale-95 transition-all"
-                    >
-                      <Mic size={22} />
-                    </motion.button>
-                  )}
+                  <motion.button
+                    key="send"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ duration: 0.1 }}
+                    type="submit"
+                    onClick={handleSendMessage}
+                    className="p-3.5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                  >
+                    <Send size={22} />
+                  </motion.button>
                 </AnimatePresence>
               </div>
             </div>
@@ -383,6 +347,68 @@ const Chat = () => {
             <p className="text-slate-500 max-w-xs font-medium">
               Choose a conversation from the sidebar to join the conversation.
             </p>
+          </div>
+        )}
+
+        {/* Private Chat Dialog */}
+        {privateChat && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPrivateChat(false)}
+              className="absolute inset-0 bg-bg-deep/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-md glass border border-white/10 rounded-[32px] p-8 relative z-10 shadow-2xl"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center mb-6 border border-primary/20">
+                  <UserPlus className="text-primary w-10 h-10" />
+                </div>
+                <h2 className="text-3xl font-black text-white mb-2">
+                  New Vibe
+                </h2>
+                <p className="text-slate-400 mb-8 font-medium">
+                  Enter a mobile number to start a private conversation.
+                </p>
+
+                <div className="w-full space-y-4">
+                  <div className="relative group">
+                    <Phone
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors"
+                      size={20}
+                    />
+                    <input
+                      type="tel"
+                      value={contactNumber}
+                      onChange={(e) => setContactNumber(e.target.value)}
+                      placeholder="Mobile number..."
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white placeholder:text-slate-600 transition-all font-bold"
+                    />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setPrivateChat(false)}
+                      className="flex-1 px-6 py-4 rounded-2xl bg-white/5 text-slate-400 font-bold hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleNewChat}
+                      className="flex-[2] px-6 py-4 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                    >
+                      Start Chat
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
       </div>
