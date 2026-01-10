@@ -6,7 +6,6 @@ import {
   Send,
   Paperclip,
   Smile,
-  Mic,
   Check,
   CheckCheck,
   Hash,
@@ -17,6 +16,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../services/api";
 import { useEffect } from "react";
+import io from "socket.io-client";
+const socket = io("http://localhost:5000");
 
 const Chat = () => {
   const [activeChat, setActiveChat] = useState(null);
@@ -25,70 +26,30 @@ const Chat = () => {
   const [groupeChat, setGroupeChat] = useState(false);
   const [contactNumber, setContactNumber] = useState("");
   const user = JSON.parse(localStorage.getItem("user"));
-  // Demo Data
   const [contacts, setContacts] = useState([]);
-
-  const messages = [
-    {
-      id: 1,
-      senderId: 1,
-      text: "Hey, how are you doing?",
-      time: "10:00 AM",
-      status: "read",
-    },
-    {
-      id: 2,
-      senderId: "me",
-      text: "I'm good, thanks! Just working on the new project.",
-      time: "10:05 AM",
-      status: "read",
-    },
-    {
-      id: 3,
-      senderId: 1,
-      text: "That sounds exciting! Which one?",
-      time: "10:06 AM",
-      status: "read",
-    },
-    {
-      id: 4,
-      senderId: "me",
-      text: "The chat application redesign. It's coming along nicely.",
-      time: "10:10 AM",
-      status: "delivered",
-    },
-    {
-      id: 5,
-      senderId: 1,
-      text: "Can't wait to see it!",
-      time: "10:15 AM",
-      status: "sent",
-    },
-    {
-      id: 6,
-      senderId: 1,
-      text: "See you tomorrow! 👋",
-      time: "10:30 AM",
-      status: "sent",
-    },
-  ];
+  const [activeContact, setActiveContact] = useState(null);
+  const [messages, setMessages] = useState([]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!messageInput.trim()) return;
-    console.log("Sending:", messageInput);
+
+    socket.emit("send-message", {
+      roomId: activeContact.roomId,
+      senderId: user.id,
+      message: messageInput,
+    });
+
     setMessageInput("");
   };
 
   const handleNewChat = async () => {
-    console.log("Starting chat with:", contactNumber);
     await api
       .post("/conversation/create-private", {
         myMobile: user.mobile,
         autherMobile: contactNumber,
       })
-      .then((Data) => {
-        console.log("Chat started successfully", Data);
+      .then((data) => {
         getConversations();
         setPrivateChat(false);
       })
@@ -99,9 +60,7 @@ const Chat = () => {
 
   const getConversations = async () => {
     try {
-      const response = await api.get("/conversation/getMyConversations", {});
-      console.log(response);
-      console.log("Conversations fetched successfully", response);
+      const response = await api.get("/conversation/getMyConversations");
       setContacts(response.conversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -109,10 +68,28 @@ const Chat = () => {
   };
 
   useEffect(() => {
+    socket.on("receive-message", (message) => {
+      setMessages((prevMessages) => [...prevMessages, message]);
+    });
     getConversations();
   }, []);
 
-  const activeContact = contacts.find((c) => c.id === activeChat);
+  const handlerActiveChat = async (id) => {
+    setActiveChat(id);
+    const contact = contacts.find((c) => c.id === id);
+    setActiveContact(contact);
+    socket.emit("join-room", contact.roomId);
+    try {
+      const response = await api.get(`/chat/getChat`, {
+        params: {
+          roomId: id,
+        },
+      });
+      setMessages(response.data || response); // Assuming response.data contains the messages
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-bg-deep overflow-hidden relative">
@@ -155,10 +132,10 @@ const Chat = () => {
 
         {/* Contacts List */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {contacts.map((contact, idx) => (
+          {contacts.map((contact) => (
             <div
               key={contact.id}
-              onClick={() => setActiveChat(contact.id)}
+              onClick={() => handlerActiveChat(contact.id)}
               className={`flex items-center mx-4 my-1 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
                 activeChat === contact.id
                   ? "bg-white/10 border border-white/10 shadow-lg"
@@ -179,7 +156,9 @@ const Chat = () => {
                 <div className="flex justify-between items-baseline">
                   <h3
                     className={`font-bold ${
-                      activeChat === idx ? "text-white" : "text-slate-300"
+                      activeChat === contact.id
+                        ? "text-white"
+                        : "text-slate-300"
                     }`}
                   >
                     {contact.name}

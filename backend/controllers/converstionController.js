@@ -49,23 +49,18 @@ module.exports = {
 
   getMyConversations: async (req, res) => {
     try {
-      console.log(req.user);
       const { mobile } = req.user;
       let conversations = await Conversation.find({
         members: { $in: [mobile] },
         type: "private",
       });
-      debugger;
 
       conversations = await Promise.all(
         conversations.map(async (conversation) => {
           const otherMember = conversation.members.find((member) => {
-            debugger;
             return member !== mobile;
           });
-          debugger;
           const user = await User.findOne({ mobile: otherMember });
-          debugger;
           if (!user) {
             return {
               id: conversation._id,
