@@ -28,13 +28,13 @@ module.exports = {
 
   createGroup: async (req, res) => {
     try {
-      const { name, members, admin } = req.body;
+      const { groupName, members, admin } = req.body;
 
       const roomId = `group_${Date.now()}`;
 
       const conversation = await Conversation.create({
         roomId,
-        name,
+        groupName,
         members,
         admin,
         type: "group",
@@ -51,11 +51,22 @@ module.exports = {
     try {
       const { mobile } = req.user;
       let conversations = await Conversation.find({
-        members: { $in: [mobile] }
+        members: { $in: [mobile] },
       });
+      console.log(conversations);
 
       conversations = await Promise.all(
         conversations.map(async (conversation) => {
+          if (conversation.type == "group") {
+            return {
+              id: conversation._id,
+              roomId: conversation.roomId,
+              members: conversation.members,
+              type: conversation.type,
+              name: conversation.groupName,
+            };
+          }
+
           const otherMember = conversation.members.find((member) => {
             return member !== mobile;
           });
@@ -67,6 +78,7 @@ module.exports = {
               members: conversation.members,
               type: conversation.type,
               name: otherMember,
+              mobile: otherMember,
             };
           }
           return {
@@ -75,8 +87,9 @@ module.exports = {
             members: conversation.members,
             type: conversation.type,
             name: user.username,
+            mobile: otherMember,
           };
-        })
+        }),
       );
 
       res.status(200).json({

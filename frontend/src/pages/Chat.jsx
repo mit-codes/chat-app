@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Phone,
@@ -12,6 +13,8 @@ import {
   Users,
   Sparkles,
   UserPlus,
+  X,
+  LogOut,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../services/api";
@@ -20,6 +23,7 @@ import io from "socket.io-client";
 const socket = io("http://localhost:5000");
 
 const Chat = () => {
+  const navigate = useNavigate()
   const [activeChat, setActiveChat] = useState(null);
   const [messageInput, setMessageInput] = useState("");
   const [privateChat, setPrivateChat] = useState(false);
@@ -28,7 +32,15 @@ const Chat = () => {
   const [contacts, setContacts] = useState([]);
   const [activeContact, setActiveContact] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [showContacts, setShowContacts] = useState(false);
+  const [serchedContacts, setSerchedContacts] = useState([]);
+  const [allConversation, setAllConversation] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const user = JSON.parse(localStorage.getItem("user"));
+
+  // for new Grupe members
+  const [groupName, setGroupName] = useState("");
+  const [groupMembers, setGroupMembers] = useState([]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -51,7 +63,26 @@ const Chat = () => {
       })
       .then((data) => {
         getConversations();
-        setPrivateChat(false);
+        setGroupeChat(false);
+      })
+      .catch((error) => {
+        console.error("Error starting chat:", error);
+      });
+  };
+
+  const handleNewGroup = async () => {
+    let menubar = groupMembers.map((con) => con.mobile);
+    menubar.push(user.mobile);
+    await api
+      .post("/conversation/create-group", {
+        groupName,
+        members: menubar,
+        admin: user.mobile,
+      })
+      .then((data) => {
+        getConversations();
+        setGroupMembers([]);
+        setGroupeChat(false);
       })
       .catch((error) => {
         console.error("Error starting chat:", error);
@@ -91,11 +122,41 @@ const Chat = () => {
         },
       });
       console.log("response : ", response);
-      setMessages(response); // Assuming response.data contains the messages
+      setMessages(response);
     } catch (error) {
       console.error("Error fetching chat history:", error);
     }
   };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim() === "") {
+      setSerchedContacts(contacts);
+    } else {
+      const filtered = contacts.filter((contact) =>
+        contact.name.toLowerCase().includes(query.toLowerCase()),
+      );
+      setSerchedContacts(filtered);
+    }
+  };
+
+  const handlerAddGrupeMember = (contact) => {
+    if (groupMembers.includes(contact)) {
+      setGroupMembers(groupMembers.filter((con) => con != contact));
+      return;
+    }
+
+    setGroupMembers((pre) => [...pre, contact]);
+  };
+
+  const handlerRemoveMemberGrupe = (contact) => {
+    setGroupMembers(groupMembers.filter((con) => con != contact));
+  };
+
+  const logOut = () => {
+    localStorage.clear();
+    navigate("/login")
+  }
 
   return (
     <div className="flex h-screen bg-bg-deep overflow-hidden relative">
@@ -109,7 +170,13 @@ const Chat = () => {
             Vibe
           </h1>
           <div className="flex space-x-2">
-            <button className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors cursor-pointer">
+            <button
+              className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors cursor-pointer"
+              onClick={() => {
+                setGroupeChat(true);
+                setSerchedContacts(contacts);
+              }}
+            >
               <Users size={20} />
             </button>
             <button
@@ -117,6 +184,12 @@ const Chat = () => {
               className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors cursor-pointer"
             >
               <UserPlus size={20} />
+            </button>
+            <button
+              onClick={() => logOut()}
+              className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors cursor-pointer"
+            >
+              <LogOut size={20} />
             </button>
           </div>
         </div>
@@ -226,14 +299,10 @@ const Chat = () => {
                 <button className="p-3 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all">
                   <Video size={20} />
                 </button>
-                <button className="p-3 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all">
-                  <Hash size={20} />
-                </button>
               </div>
             </div>
 
             {/* Messages */}
-            
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               {messages.map((msg) => (
                 <div
@@ -354,7 +423,7 @@ const Chat = () => {
               className="w-full max-w-md glass border border-white/10 rounded-[32px] p-8 relative z-10 shadow-2xl"
             >
               <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center mb-6 border border-primary/20">
+                <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center border border-primary/20">
                   <UserPlus className="text-primary w-10 h-10" />
                 </div>
                 <h2 className="text-3xl font-black text-white mb-2">
@@ -394,6 +463,190 @@ const Chat = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Groupe Chat Dialog */}
+        {groupeChat && (
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setGroupeChat(false)}
+              className="absolute inset-0 bg-bg-deep/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-3xl glass border border-white/10 rounded-[32px] p-8 relative z-10 shadow-2xl"
+            >
+              <div className="flex justify-around">
+                {/* Left side */}
+                <div className="flex flex-col items-center text-center border-white/10 w-5/10">
+                  {/* header */}
+                  <div className="header w-70 flex justify-around items-center">
+                    <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center border border-primary/20">
+                      <Users className="text-primary w-10 h-10" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-white mb-2">
+                        New Vibe
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="w-full space-y-4 flex flex-col h-[90vh] max-h-[600px]">
+                    {/* Search */}
+                    <div className="py-4 border-b border-white/10">
+                      <div className="relative group">
+                        <Search
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors"
+                          size={18}
+                        />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => handleSearch(e.target.value)}
+                          placeholder="Search contacts..."
+                          className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white/5 border border-white/5 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white placeholder:text-slate-600 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Contacts List */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      {serchedContacts.length > 0 ? (
+                        serchedContacts.map((contact) => (
+                          <div
+                            key={contact.id}
+                            onClick={() => handlerAddGrupeMember(contact)}
+                            className={`mx-4 my-2 p-4 rounded-2xl cursor-pointer transition-all duration-200 hover:bg-white/5 border border-transparent hover:border-white/10 ${groupMembers.includes(contact) ? "bg-white/5 border border-transparent border-white/10" : ""}`}
+                          >
+                            <div className="flex items-center">
+                              <div className="relative">
+                                <img
+                                  src={contact.avatar}
+                                  alt={contact.name}
+                                  className="w-12 h-12 rounded-2xl object-cover"
+                                />
+                                {contact.online && (
+                                  <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-3 border-[#121b2e] rounded-full" />
+                                )}
+                              </div>
+                              <div className="ml-4 flex-1">
+                                <div className="flex justify-between items-baseline">
+                                  <h3 className="font-bold text-slate-200">
+                                    {contact.name}
+                                  </h3>
+                                  <span className="text-[10px] uppercase font-black text-slate-500">
+                                    {contact.online ? "Online" : "Offline"}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 truncate w-40 mt-1">
+                                  {contact.lastMessage || "No messages yet"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-slate-400">
+                          <p className="text-center">No contacts found</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-4 border-t border-white/10">
+                      <p className="text-xs text-slate-500 text-center">
+                        {contacts.length} contact
+                        {contacts.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right side */}
+                <div className="members w-4/10">
+                  <h2 className="font-bold text-slate-200 p-2">
+                    Groupe Name :{" "}
+                  </h2>
+                  <div className="relative group">
+                    <Users
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors"
+                      size={20}
+                    />
+                    <input
+                      type="text"
+                      onChange={(e) => setGroupName(e.target.value)}
+                      required
+                      placeholder=" ✌️ Cool doudes... ✌️  "
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white placeholder:text-slate-600 transition-all font-bold"
+                    />
+                  </div>
+
+                  <h2 className="py-4 border-b border-white/10">Members : </h2>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    {groupMembers.length > 0 ? (
+                      groupMembers.map((contact) => (
+                        <div
+                          key={contact.id}
+                          className="mx-4 my-2 p-4 rounded-2xl cursor-pointer transition-all duration-200 hover:bg-white/5 border border-transparent hover:border-white/10"
+                        >
+                          <div className="flex items-center">
+                            <div className="relative">
+                              <img
+                                src={contact.avatar}
+                                alt={contact.name}
+                                className="w-12 h-12 rounded-2xl object-cover"
+                              />
+                            </div>
+
+                            <div className="ml-4 flex-1">
+                              <h3 className="font-bold text-slate-200">
+                                {contact.name}
+                              </h3>
+                            </div>
+
+                            <X
+                              className="text-red-400"
+                              onClick={() => {
+                                handlerRemoveMemberGrupe(contact);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-slate-400">
+                        <p className="text-center mt-2">
+                          {" "}
+                          No any members selected{" "}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Btn bottom */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setGroupeChat(false)}
+                  className="flex-1 px-6 py-4 rounded-2xl bg-white/5 text-slate-400 font-bold hover:bg-white/10 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleNewGroup}
+                  className="flex-[2] px-6 py-4 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                >
+                  New group
+                </button>
               </div>
             </motion.div>
           </div>
