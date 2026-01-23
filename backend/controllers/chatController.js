@@ -20,13 +20,11 @@ const chatSocket = (io) => {
     });
   });
 };
-
+  
 const getChat = async (req, res) => {
   try {
-    const messages = await Message.find({ room: req.query.roomId });
-    debugger;
+    const messages = await Message.find({ roomId: req.query.roomId });
     res.json(messages);
-    debugger;
   } catch (error) {
     console.error("Error fetching messages:", error);
     res.status(500).json({ error: "Failed to fetch messages" });

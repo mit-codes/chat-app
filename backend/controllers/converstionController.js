@@ -51,8 +51,7 @@ module.exports = {
     try {
       const { mobile } = req.user;
       let conversations = await Conversation.find({
-        members: { $in: [mobile] },
-        type: "private",
+        members: { $in: [mobile] }
       });
 
       conversations = await Promise.all(

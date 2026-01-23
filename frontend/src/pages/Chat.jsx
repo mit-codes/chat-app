@@ -25,10 +25,10 @@ const Chat = () => {
   const [privateChat, setPrivateChat] = useState(false);
   const [groupeChat, setGroupeChat] = useState(false);
   const [contactNumber, setContactNumber] = useState("");
-  const user = JSON.parse(localStorage.getItem("user"));
   const [contacts, setContacts] = useState([]);
   const [activeContact, setActiveContact] = useState(null);
   const [messages, setMessages] = useState([]);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -68,10 +68,15 @@ const Chat = () => {
   };
 
   useEffect(() => {
-    socket.on("receive-message", (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
-    });
     getConversations();
+  }, []);
+
+  useEffect(() => {
+    socket.on("receive-message", (message) => {
+      console.log("message : ", message);
+      setMessages((prevMessages) => [...prevMessages, message]);
+      console.log("messages : ", messages);
+    });
   }, []);
 
   const handlerActiveChat = async (id) => {
@@ -82,10 +87,11 @@ const Chat = () => {
     try {
       const response = await api.get(`/chat/getChat`, {
         params: {
-          roomId: id,
+          roomId: contact.roomId,
         },
       });
-      setMessages(response.data || response); // Assuming response.data contains the messages
+      console.log("response : ", response);
+      setMessages(response); // Assuming response.data contains the messages
     } catch (error) {
       console.error("Error fetching chat history:", error);
     }
@@ -227,15 +233,16 @@ const Chat = () => {
             </div>
 
             {/* Messages */}
+            
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${
-                    msg.senderId === "me" ? "justify-end" : "justify-start"
+                    msg.senderId === user.id ? "justify-end" : "justify-start"
                   }`}
                 >
-                  {msg.senderId !== "me" && (
+                  {msg.senderId !== user.id && (
                     <img
                       src={activeContact?.avatar}
                       className="w-8 h-8 rounded-xl object-cover mr-3 self-end mb-1 border border-white/10"
@@ -244,17 +251,17 @@ const Chat = () => {
                   )}
                   <div
                     className={`px-5 py-3.5 rounded-3xl max-w-sm shadow-xl ${
-                      msg.senderId === "me"
+                      msg.senderId === user.id
                         ? "bg-gradient-to-br from-primary to-primary/80 text-white rounded-br-none shadow-primary/20"
                         : "glass-morphism text-slate-200 rounded-bl-none"
                     }`}
                   >
                     <p className="text-sm font-medium leading-relaxed">
-                      {msg.text}
+                      {msg.message}
                     </p>
                     <div
                       className={`flex items-center justify-end mt-1.5 space-x-1.5 ${
-                        msg.senderId === "me"
+                        msg.senderId === user.id
                           ? "text-white/60"
                           : "text-slate-500"
                       }`}
@@ -262,7 +269,7 @@ const Chat = () => {
                       <span className="text-[9px] font-black uppercase tracking-tighter">
                         {msg.time}
                       </span>
-                      {msg.senderId === "me" && (
+                      {msg.senderId === user.id && (
                         <span className="opacity-80">
                           {msg.status === "sent" && <Check size={10} />}
                           {msg.status === "delivered" && (
