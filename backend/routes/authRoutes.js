@@ -11,4 +11,4 @@ router.get("/verify", authMiddleware, (req, res) => {
   res.json({ message: "Token valid", user: req.user });
 });
 
-module.exports = router;
+module.exports = router;  

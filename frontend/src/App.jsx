@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Chat from "./pages/Chat";
-import Emoji from "./pages/Emoji";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -21,7 +20,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/Emoji" element={ <Emoji />}/>
          
       </Routes>
     </Router>

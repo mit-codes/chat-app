@@ -53,7 +53,6 @@ module.exports = {
       let conversations = await Conversation.find({
         members: { $in: [mobile] },
       });
-      console.log(conversations);
 
       conversations = await Promise.all(
         conversations.map(async (conversation) => {
@@ -100,4 +99,20 @@ module.exports = {
       res.status(500).json({ message: "Server error", error: error.message });
     }
   },
+
+  allUser : async (req, res) => {
+  try {
+    const { mobile } = req.user;
+    let allUser = await User.find({
+      mobile: { $ne: mobile },
+    });
+    res.status(200).json({
+      message: "all User fetched successfully",
+      allUser,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
+
 };

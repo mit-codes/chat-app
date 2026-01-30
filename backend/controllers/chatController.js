@@ -4,9 +4,15 @@ const chatSocket = (io) => {
   io.on("connection", (socket) => {
     console.log("socket connected : ", socket.id);
 
-    socket.on("join-room", (room) => {
-      socket.join(room);
-      console.log("joined room : ", room);
+    socket.on("join-room", (roomId) => {
+      for (const room of socket.rooms) {
+        if (room !== socket.id) {
+          socket.leave(room);
+        }
+      }
+
+      socket.join(roomId);
+      console.log("joined room : ", roomId);
     });
 
     socket.on("send-message", async (data) => {
@@ -20,7 +26,7 @@ const chatSocket = (io) => {
     });
   });
 };
-  
+
 const getChat = async (req, res) => {
   try {
     const messages = await Message.find({ roomId: req.query.roomId });

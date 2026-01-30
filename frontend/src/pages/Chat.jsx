@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Phone,
@@ -23,7 +23,7 @@ import io from "socket.io-client";
 const socket = io("http://localhost:5000");
 
 const Chat = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [activeChat, setActiveChat] = useState(null);
   const [messageInput, setMessageInput] = useState("");
   const [privateChat, setPrivateChat] = useState(false);
@@ -32,10 +32,9 @@ const Chat = () => {
   const [contacts, setContacts] = useState([]);
   const [activeContact, setActiveContact] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [showContacts, setShowContacts] = useState(false);
   const [serchedContacts, setSerchedContacts] = useState([]);
-  const [allConversation, setAllConversation] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
 
   // for new Grupe members
@@ -63,7 +62,7 @@ const Chat = () => {
       })
       .then((data) => {
         getConversations();
-        setGroupeChat(false);
+        setPrivateChat(false);
       })
       .catch((error) => {
         console.error("Error starting chat:", error);
@@ -98,8 +97,19 @@ const Chat = () => {
     }
   };
 
+  const getUser = async () => {
+    try {
+      const response = await api.get("/conversation/allUser");
+      console.log(response);
+      setUsers(response.allUser);
+    } catch (error) {
+      console.log("Error fetching conversations:", error);
+    }
+  };
+
   useEffect(() => {
     getConversations();
+    getUser();
   }, []);
 
   useEffect(() => {
@@ -108,6 +118,10 @@ const Chat = () => {
       setMessages((prevMessages) => [...prevMessages, message]);
       console.log("messages : ", messages);
     });
+
+    return () => {
+      socket.on("receive-meassage");
+    };
   }, []);
 
   const handlerActiveChat = async (id) => {
@@ -131,9 +145,9 @@ const Chat = () => {
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
-      setSerchedContacts(contacts);
+      setSerchedContacts(users);
     } else {
-      const filtered = contacts.filter((contact) =>
+      const filtered = users.filter((contact) =>
         contact.name.toLowerCase().includes(query.toLowerCase()),
       );
       setSerchedContacts(filtered);
@@ -145,7 +159,6 @@ const Chat = () => {
       setGroupMembers(groupMembers.filter((con) => con != contact));
       return;
     }
-
     setGroupMembers((pre) => [...pre, contact]);
   };
 
@@ -155,8 +168,8 @@ const Chat = () => {
 
   const logOut = () => {
     localStorage.clear();
-    navigate("/login")
-  }
+    navigate("/login");
+  };
 
   return (
     <div className="flex h-screen bg-bg-deep overflow-hidden relative">
@@ -174,7 +187,7 @@ const Chat = () => {
               className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors cursor-pointer"
               onClick={() => {
                 setGroupeChat(true);
-                setSerchedContacts(contacts);
+                setSerchedContacts(users);
               }}
             >
               <Users size={20} />
@@ -486,7 +499,7 @@ const Chat = () => {
             >
               <div className="flex justify-around">
                 {/* Left side */}
-                <div className="flex flex-col items-center text-center border-white/10 w-5/10">
+                <div className="flex flex-col items-center border-white/10 w-5/10">
                   {/* header */}
                   <div className="header w-70 flex justify-around items-center">
                     <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center border border-primary/20">
@@ -530,7 +543,7 @@ const Chat = () => {
                               <div className="relative">
                                 <img
                                   src={contact.avatar}
-                                  alt={contact.name}
+                                  alt={contact.username}
                                   className="w-12 h-12 rounded-2xl object-cover"
                                 />
                                 {contact.online && (
@@ -540,14 +553,14 @@ const Chat = () => {
                               <div className="ml-4 flex-1">
                                 <div className="flex justify-between items-baseline">
                                   <h3 className="font-bold text-slate-200">
-                                    {contact.name}
+                                    {contact.username}
                                   </h3>
                                   <span className="text-[10px] uppercase font-black text-slate-500">
                                     {contact.online ? "Online" : "Offline"}
                                   </span>
                                 </div>
-                                <p className="text-xs text-slate-500 truncate w-40 mt-1">
-                                  {contact.lastMessage || "No messages yet"}
+                                <p className="text-xs text-slate-500 truncate mt-1">
+                                  {contact.mobile}
                                 </p>
                               </div>
                             </div>
@@ -563,8 +576,8 @@ const Chat = () => {
                     {/* Footer */}
                     <div className="p-4 border-t border-white/10">
                       <p className="text-xs text-slate-500 text-center">
-                        {contacts.length} contact
-                        {contacts.length !== 1 ? "s" : ""}
+                        {serchedContacts.length} contact
+                        {serchedContacts.length !== 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
@@ -601,14 +614,14 @@ const Chat = () => {
                             <div className="relative">
                               <img
                                 src={contact.avatar}
-                                alt={contact.name}
+                                alt={contact.username}
                                 className="w-12 h-12 rounded-2xl object-cover"
                               />
                             </div>
 
                             <div className="ml-4 flex-1">
                               <h3 className="font-bold text-slate-200">
-                                {contact.name}
+                                {contact.username}
                               </h3>
                             </div>
 
